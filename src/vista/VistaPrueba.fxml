@@ -11,7 +11,8 @@
 
 <AnchorPane prefHeight="300.0" prefWidth="600.0" xmlns="http://javafx.com/javafx/15.0.1" xmlns:fx="http://javafx.com/fxml/1" fx:controller="vista.PruebaOverviewController">
    <children>
-      <ChoiceBox fx:id="months" prefWidth="150.0" AnchorPane.leftAnchor="20.0" AnchorPane.topAnchor="20.0" />
+      <ChoiceBox fx:id="months" layoutX="116.0" layoutY="20.0" prefWidth="120.0" AnchorPane.leftAnchor="110.0" AnchorPane.topAnchor="20.0" />
+      <ChoiceBox fx:id="years" prefWidth="80.0" AnchorPane.leftAnchor="20.0" AnchorPane.topAnchor="20.0" />
       <GridPane layoutX="228.0" layoutY="93.0" AnchorPane.bottomAnchor="117.0" AnchorPane.leftAnchor="80.0" AnchorPane.rightAnchor="80.0" AnchorPane.topAnchor="93.0">
         <columnConstraints>
           <ColumnConstraints hgrow="SOMETIMES" minWidth="10.0" prefWidth="100.0" />
@@ -33,8 +34,8 @@
       </GridPane>
       <HBox layoutX="425.0" layoutY="255.0" spacing="10.0" AnchorPane.bottomAnchor="20.0" AnchorPane.rightAnchor="20.0">
          <children>
-            <Button mnemonicParsing="false" onAction="#handleNewPrueba" text="Registrar" />
-            <Button mnemonicParsing="false" onAction="#signUpPrueba" text="Inscribirse" />
+            <Button mnemonicParsing="false" onAction="#handleNewPrueba" prefWidth="80.0" text="Añadir" />
+            <Button mnemonicParsing="false" onAction="#showPersonsPrueba" prefWidth="80.0" text="Ver Pilotos" />
          </children>
       </HBox>
    </children>

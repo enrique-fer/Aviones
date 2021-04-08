@@ -21,6 +21,8 @@ public class PersonOverviewController {
     private TableColumn<Person, String> licenciaColumn;
     @FXML
     private ChoiceBox<Prueba> pruebas;
+    @FXML
+    private ChoiceBox<Integer> years;
 
     @FXML
     private Label nombreLabel;
@@ -61,6 +63,40 @@ public class PersonOverviewController {
 
         personTable.setItems(mainApp.getBBDD().getPersonData());
     }
+   
+    private void showPersonDetails(Person person) {
+        if (person != null) {
+        	pruebas.getSelectionModel().clearSelection();
+        	
+            nombreLabel.setText(person.getNombre());
+            apellidosLabel.setText(person.getApellidos());
+            licenciaLabel.setText(person.getLicencia());
+            
+            years.setItems(this.mainApp.getBBDD().getPruebaYears());
+            
+            showPruebasAnio(null, null);
+
+    		years.getSelectionModel().selectedItemProperty()
+    				.addListener((observable, oldValue, newValue) -> showPruebasAnio(person, newValue));
+        } else {
+            // Person is null, remove all the text.
+            nombreLabel.setText("");
+            apellidosLabel.setText("");
+            licenciaLabel.setText("");
+           
+        }
+    }
+    
+    private void showPruebasAnio(Person person, Integer anio) {
+		if (person != null && anio != null) {
+			pruebas.setItems(mainApp.getBBDD().getPersonPruebaData(person, anio));
+
+			showPruebaDetails(null);
+
+			pruebas.getSelectionModel().selectedItemProperty()
+					.addListener((observable, oldValue, newValue) -> showPruebaDetails(newValue));
+		}
+	}
     
     private void showPruebaDetails(Prueba prueba) {
         if (prueba != null) {
@@ -70,28 +106,6 @@ public class PersonOverviewController {
         } else {
             nPruebaLabel.setText("");
             fPruebaLabel.setText("");           
-        }
-}
-   
-    private void showPersonDetails(Person person) {
-        if (person != null) {
-            // Fill the labels with info from the person object.
-            nombreLabel.setText(person.getNombre());
-            apellidosLabel.setText(person.getApellidos());
-            licenciaLabel.setText(person.getLicencia());
-            
-            pruebas.setItems(person.getPruebas());
-            
-            showPruebaDetails(null);
-            pruebas.getSelectionModel().selectedItemProperty().addListener(
-                    (observable, oldValue, newValue) -> showPruebaDetails(newValue));
-
-        } else {
-            // Person is null, remove all the text.
-            nombreLabel.setText("");
-            apellidosLabel.setText("");
-            licenciaLabel.setText("");
-           
         }
     }
     

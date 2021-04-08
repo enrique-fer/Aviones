@@ -23,12 +23,6 @@ public class Prueba {
 		this(null, null);
 	}
 
-	/**
-	 * Constructor with some initial data.
-	 * 
-	 * @param nombre
-	 * @param fecha
-	 */
 	public Prueba(String nombre, LocalDate fecha) {
 		this.nombre = new SimpleStringProperty(nombre);
 		this.fecha = new SimpleObjectProperty<LocalDate>(fecha);

@@ -1,16 +1,12 @@
 package bd;
 
 import java.sql.Connection;
-import java.sql.Date;
 import java.sql.DriverManager;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.time.LocalDate;
-import java.time.ZoneId;
-
-import javafx.beans.property.ObjectProperty;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import modelo.Person;
@@ -19,55 +15,51 @@ import modelo.Prueba;
 public class BBDD {
 	private final String drive = "jdbc:mysql://localhost:3306/";
 	private final String NOMBRE = "competicion";
-	private final String TABLA_PILOTO = "CREATE TABLE pilotos"
-			+ "(licencia INT(20), nombre varchar(50), "
+	private final String TABLA_PILOTO = "CREATE TABLE pilotos" + "(licencia INT(20), nombre varchar(50), "
 			+ "apellidos varchar(100), PRIMARY KEY(licencia))";
-	
-	private final String TABLA_PRUEBA = "CREATE TABLE pruebas" //PK (mes, anio)
-			+ "(nombre varchar(50), fecha DATE,"
-			+ " participantes INT(3), PRIMARY KEY(nombre))";
-	//TODO añadir por separado dia, mes, anio
-	
+
+	private final String TABLA_PRUEBA = "CREATE TABLE pruebas"
+			+ "(nombre varchar(50), dia INT(3), mes INT(3), anio INT(5),"
+			+ " participantes INT(3), PRIMARY KEY(mes, anio))";
+
 	private final String TABLA_PILOTO_PRUEBA = "CREATE TABLE pilotos_pruebas"
-			+ "(id_piloto INT(20), id_prueba varchar(50), PRIMARY KEY(id_piloto, id_prueba),"
+			+ "(id_piloto INT(20), id_prueba_mes INT(3), id_prueba_anio INT(3), "
+			+ "PRIMARY KEY(id_piloto, id_prueba_mes, id_prueba_anio),"
 			+ "CONSTRAINT piloto_FK FOREIGN KEY(id_piloto) REFERENCES pilotos(licencia),"
-			+ "CONSTRAINT prueba_FK FOREIGN KEY(id_prueba) REFERENCES pruebas(nombre))";
-	//TODO incluir pilotos en lista de espera, y nuevos PK
-	//TODO incluir campos para para prueba de cada piloto
-	
-	
+			+ "CONSTRAINT prueba_FK FOREIGN KEY(id_prueba_mes, id_prueba_anio) " + "REFERENCES pruebas(mes, anio))";
+
 	private Connection db;
 
 	public BBDD() {
-		if(!conectar()) {
+		if (!conectar()) {
 			crearDB();
 			conectar();
 			crearTablas();
 		}
 	}
-	
+
 	private boolean conectar() {
-        try {
-            db = DriverManager.getConnection(drive + this.NOMBRE, "root", "root");
-            	
-            return true;
-        } catch (SQLException sqle) {
-            
-            return false;
-        }
+		try {
+			db = DriverManager.getConnection(drive + this.NOMBRE, "root", "root");
+
+			return true;
+		} catch (SQLException sqle) {
+
+			return false;
+		}
 	}
-	
+
 	private void crearDB() {
 		try {
 			db = DriverManager.getConnection(drive, "root", "root");
 			PreparedStatement ps = db.prepareStatement("CREATE DATABASE " + this.NOMBRE);
-			ps.executeUpdate();			
+			ps.executeUpdate();
 			ps.close();
 		} catch (SQLException e) {
 			e.printStackTrace();
 		}
 	}
-	
+
 	private void crearTablas() {
 		try {
 			crearTablaPilotos();
@@ -77,219 +69,307 @@ public class BBDD {
 			e.printStackTrace();
 		}
 	}
-	
-	private void crearTablaPilotos() throws SQLException {		
+
+	private void crearTablaPilotos() throws SQLException {
 		PreparedStatement ps = db.prepareStatement(TABLA_PILOTO);
 		ps.executeUpdate();
-		ps.close();		
+		ps.close();
 	}
-	
-	private void crearTablaPruebas() throws SQLException {		
+
+	private void crearTablaPruebas() throws SQLException {
 		PreparedStatement ps = db.prepareStatement(TABLA_PRUEBA);
 		ps.executeUpdate();
 		ps.close();
 	}
-	
+
 	private void crearTablaPP() throws SQLException {
 		PreparedStatement ps = db.prepareStatement(TABLA_PILOTO_PRUEBA);
 		ps.executeUpdate();
 		ps.close();
 	}
-	
-	//SELECTS
-	public ObservableList<Person> getPersonData() { //Incluir la tabla prueba_piloto
+
+	// SELECTS
+	public ObservableList<Person> getPersonData() {
 		ObservableList<Person> personData = FXCollections.observableArrayList();
 		String query = "SELECT * FROM pilotos";
-		
+
 		try {
 			Statement st = db.createStatement();
 			ResultSet rs = st.executeQuery(query);
-  
+
 			while (rs.next()) {
 				Person p = new Person();
 				p.setLicencia(rs.getString("licencia"));
 				p.setNombre(rs.getString("nombre"));
 				p.setApellidos(rs.getString("apellidos"));
-				getPruebaPersonData(p);
+				p.setPruebas(getPruebaPersonData(p.getLicencia()));
 
 				personData.add(p);
 			}
 			st.close();
-	    } catch (Exception e) {
-	    	System.err.println("Got an exception! ");
-	    	System.err.println(e.getMessage());
-	    }
-		
+		} catch (Exception e) {
+			System.err.println("Got an exception! ");
+			System.err.println(e.getMessage());
+		}
+
 		return personData;
 	}
-	
-	public ObservableList<Prueba> getPruebaData() { //Incluir la tabla prueba_piloto
+
+	public ObservableList<Prueba> getPruebaData(int anio) {
 		ObservableList<Prueba> pruebaData = FXCollections.observableArrayList();
-		String query = "SELECT * FROM pruebas ORDER BY fecha";
-		
+		String query = "SELECT * FROM pruebas WHERE anio = ? ORDER BY mes";
+
 		try {
-			Statement st = db.createStatement();
-			ResultSet rs = st.executeQuery(query);
-  
+			PreparedStatement ps = db.prepareStatement(query);
+			ps.setInt(1, anio);
+			ResultSet rs = ps.executeQuery();
+
 			while (rs.next()) {
 				Prueba p = new Prueba();
 				p.setNombre(rs.getString("nombre"));
-				p.setFecha(rs.getDate("fecha").toLocalDate());
+				int dia = rs.getInt("dia");
+				int mes = rs.getInt("mes");
+				anio = rs.getInt("anio");
+				p.setFecha(LocalDate.of(anio, mes, dia));
 				p.setParticipantes(rs.getInt("participantes"));
 
 				pruebaData.add(p);
 			}
-			st.close();
-	    } catch (Exception e) {
-	    	System.err.println("Got an exception! ");
-	    	System.err.println(e.getMessage());
-	    }
-		
+			ps.close();
+		} catch (Exception e) {
+			System.err.println("Got an exception! ");
+			System.err.println(e.getMessage());
+		}
+
 		return pruebaData;
 	}
-	
-	public Person getPerson(String licencia) {
-		String query = "SELECT * FROM pilotos WHERE licencia = ?";
-		Person p = new Person();
-		
+
+	public ObservableList<Prueba> getPruebaPersonData(String licencia) {
+		ObservableList<Prueba> data = FXCollections.observableArrayList();
+
+		String query = "SELECT * FROM pruebas WHERE (mes,anio) IN ("
+				+ "SELECT id_prueba_mes, id_prueba_anio FROM pilotos_pruebas "
+				+ "WHERE id_piloto = ?)";
+
 		try {
-	    	  PreparedStatement preparedStmt = db.prepareStatement(query);
-	    	  preparedStmt.setString (1, licencia);
-	    	  
-	    	  ResultSet rs = preparedStmt.executeQuery();
-	    	  
-	    	  while (rs.next()) {
-					p.setNombre(rs.getString("nombre"));
-					p.setLicencia(licencia);
-					p.setApellidos(rs.getString("apellidos"));
-				}
-		} catch (SQLException e) {
-			e.printStackTrace();
-		}
-		
-		return p;
-	}
-	
-	public void getPruebaPersonData(Person person) {		
-		String query = "SELECT * FROM pruebas WHERE nombre IN ("
-				+ "SELECT id_prueba FROM pilotos_pruebas WHERE id_piloto = ?)";
-		
-		try {
-			PreparedStatement st = db.prepareStatement(query);
-			st.setString(1, person.getLicencia());
-			
-			ResultSet rs = st.executeQuery();
-  
+			PreparedStatement ps = db.prepareStatement(query);
+			ps.setString(1, licencia);
+
+			ResultSet rs = ps.executeQuery();
 			while (rs.next()) {
 				Prueba p = new Prueba();
 				p.setNombre(rs.getString("nombre"));
-				p.setFecha(rs.getDate("fecha").toLocalDate());
+				int dia = rs.getInt("dia");
+				int mes = rs.getInt("mes");
+				int anio = rs.getInt("anio");
+				p.setFecha(LocalDate.of(anio, mes, dia));
 				p.setParticipantes(rs.getInt("participantes"));
 
-				person.addPrueba(p);
+				data.add(p);
+			}
+			ps.close();
+		} catch (Exception e) {
+			System.err.println("Got an exception! ");
+			System.err.println(e.getMessage());
+		}
+
+		return data;
+	}
+	
+	public ObservableList<Person> getInscritosData(Prueba prueba) {
+		ObservableList<Person> inscritosData = FXCollections.observableArrayList();
+		String query = "SELECT * FROM pilotos WHERE licencia in ("
+				+ "SELECT id_piloto FROM pilotos_pruebas WHERE id_prueba_mes = ? AND id_prueba_anio = ?);";
+
+		try {
+			PreparedStatement ps = db.prepareStatement(query);
+			ps.setInt(1, prueba.getFecha().getMonthValue());
+			ps.setInt(2, prueba.getFecha().getYear());
+			ResultSet rs = ps.executeQuery();
+
+			while (rs.next()) {
+				Person p = new Person();
+				p.setLicencia(rs.getString("licencia"));
+				p.setNombre(rs.getString("nombre"));
+				p.setApellidos(rs.getString("apellidos"));
+				
+				inscritosData.add(p);
+			}
+			ps.close();
+		} catch (Exception e) {
+			System.err.println("Got an exception! ");
+			System.err.println(e.getMessage());
+		}
+
+		return inscritosData;
+	}
+	
+	public ObservableList<Integer> getPruebaYears() {
+		ObservableList<Integer> years = FXCollections.observableArrayList();
+		String query = "SELECT DISTINCT anio FROM pruebas";
+
+		try {
+			Statement st = db.createStatement();
+			ResultSet rs = st.executeQuery(query);
+
+			while (rs.next()) {
+				years.add(rs.getInt("anio"));
 			}
 			st.close();
-	    } catch (Exception e) {
-	    	System.err.println("Got an exception! ");
-	    	System.err.println(e.getMessage());
-	    }
+		} catch (Exception e) {
+			System.err.println("Got an exception! ");
+			System.err.println(e.getMessage());
+		}
+		
+		return years;
 	}
 	
-	
-	
-	//INSERTS
+	public ObservableList<Prueba> getPersonPruebaData(Person person, int anio) {
+		ObservableList<Prueba> data = FXCollections.observableArrayList();
+
+		String query = "SELECT * FROM pruebas WHERE (mes,anio) IN ("
+				+ "SELECT id_prueba_mes, id_prueba_anio FROM pilotos_pruebas "
+				+ "WHERE id_piloto = ? AND id_prueba_anio = ?)";
+
+		try {
+			PreparedStatement ps = db.prepareStatement(query);
+			ps.setString(1, person.getLicencia());
+			ps.setInt(2, anio);
+
+			ResultSet rs = ps.executeQuery();
+			while (rs.next()) {
+				Prueba p = new Prueba();
+				p.setNombre(rs.getString("nombre"));
+				int dia = rs.getInt("dia");
+				int mes = rs.getInt("mes");
+				p.setFecha(LocalDate.of(anio, mes, dia));
+				p.setParticipantes(rs.getInt("participantes"));
+
+				data.add(p);
+			}
+			ps.close();
+		} catch (Exception e) {
+			System.err.println("Got an exception! ");
+			System.err.println(e.getMessage());
+		}
+
+		return data;
+	}
+
+	// INSERTS
 	public void insertPerson(Person person) {
-	      String query = "INSERT INTO pilotos (licencia, nombre, apellidos)"
-	        + " VALUES (?, ?, ?)";
-	     
-	      try {
-	    	  PreparedStatement preparedStmt = db.prepareStatement(query);
-	    	  preparedStmt.setString (1, person.getLicencia());
-	    	  preparedStmt.setString (2, person.getNombre());
-	    	  preparedStmt.setString (3, person.getApellidos());
-	    	  
-	    	  preparedStmt.execute();
+		String query = "INSERT INTO pilotos (licencia, nombre, apellidos)" + " VALUES (?, ?, ?)";
+
+		try {
+			PreparedStatement ps = db.prepareStatement(query);
+			ps.setString(1, person.getLicencia());
+			ps.setString(2, person.getNombre());
+			ps.setString(3, person.getApellidos());
+
+			ps.execute();
 		} catch (SQLException e) {
 			e.printStackTrace();
 		}
 	}
-	
-	public void insertPrueba(Prueba prueba) {
-	      String query = "INSERT INTO pruebas (nombre, fecha, participantes)"
-	        + " VALUES (?, ?, ?)";
-	     
-	      try {
-	    	  PreparedStatement preparedStmt = db.prepareStatement(query);
-	    	  preparedStmt.setString (1, prueba.getNombre());
-	    	  preparedStmt.setDate(2, Date.valueOf(prueba.getFecha()));
-	    	  preparedStmt.setInt(3, prueba.getParticipantes());
-	    	  
-	    	  preparedStmt.execute();
-		} catch (SQLException e) {
-			e.printStackTrace();
-		}
+
+	public void insertPrueba(Prueba prueba) throws SQLException {
+		String query = "INSERT INTO pruebas (nombre, dia, mes, anio, participantes)" + " VALUES (?, ?, ?, ?, ?)";
+
+		PreparedStatement ps = db.prepareStatement(query);
+		ps.setString(1, prueba.getNombre());
+		ps.setInt(2, prueba.getFecha().getDayOfMonth());
+		ps.setInt(3, prueba.getFecha().getMonthValue());
+		ps.setInt(4, prueba.getFecha().getYear());
+		ps.setInt(5, prueba.getParticipantes());
+
+		ps.execute();
 	}
-	
+
 	public void insertPruebaPerson(Prueba prueba, Person person) {
-	      String query = "INSERT INTO pilotos_pruebas (id_piloto, id_prueba)"
-	        + " VALUES (?, ?)";
-	     
-	      try {
-	    	  PreparedStatement preparedStmt = db.prepareStatement(query);
-	    	  preparedStmt.setString (1, person.getLicencia());
-	    	  preparedStmt.setString(2, prueba.getNombre());
-	    	  
-	    	  preparedStmt.execute();
+		String query = "INSERT INTO pilotos_pruebas (id_piloto, id_prueba_mes, id_prueba_anio)" + " VALUES (?,?,?)";
+		try {
+			PreparedStatement ps = db.prepareStatement(query);
+			ps.setString(1, person.getLicencia());
+			ps.setInt(2, prueba.getFecha().getMonthValue());
+			ps.setInt(3, prueba.getFecha().getYear());
+
+			ps.execute();
 		} catch (SQLException e) {
 			e.printStackTrace();
 		}
 	}
-	
-	//UPDATES
+
+	// UPDATE
 	public void updatePerson(Person person) {
-		String query = "UPDATE pilotos SET nombre = ?, apellidos = ? where licencia = ?";
-	    PreparedStatement preparedStmt;
+		String query = "UPDATE pilotos SET nombre = ?, apellidos = ? WHERE licencia = ?";
+		PreparedStatement ps;
 		try {
-			preparedStmt = db.prepareStatement(query);
-			preparedStmt.setString(1, person.getNombre());
-			preparedStmt.setString(2, person.getApellidos());
-			preparedStmt.setString(3, person.getLicencia());
+			ps = db.prepareStatement(query);
+			ps.setString(1, person.getNombre());
+			ps.setString(2, person.getApellidos());
+			ps.setString(3, person.getLicencia());
 
-			preparedStmt.executeUpdate();
+			ps.executeUpdate();
 		} catch (SQLException e) {
 			e.printStackTrace();
 		}
 	}
-	   
+
 	public void updatePrueba(Prueba prueba) {
-		String query = "UPDATE pruebas SET participantes = ? WHERE nombre = ?";
-	    PreparedStatement preparedStmt;
+		String query = "UPDATE pruebas SET participantes = ? WHERE mes = ? AND anio = ?";
+		PreparedStatement ps;
 		try {
-			preparedStmt = db.prepareStatement(query);
-			preparedStmt.setInt(1, prueba.getParticipantes());
-			preparedStmt.setString(2, prueba.getNombre());
+			ps = db.prepareStatement(query);
+			ps.setInt(1, prueba.getParticipantes());
+			ps.setInt(2, prueba.getFecha().getMonthValue());
+			ps.setInt(3, prueba.getFecha().getYear());
 
-			preparedStmt.executeUpdate();
+			ps.executeUpdate();
 		} catch (SQLException e) {
 			e.printStackTrace();
 		}
 	}
-	
-	
-	//DELETE
+
+	// DELETE
 	public void deletePerson(Person person) {
-		String query = "DELETE FROM pilotos where licencia = ?";
-	    PreparedStatement preparedStmt;
-	    
-	    try {
-			preparedStmt = db.prepareStatement(query);
-			preparedStmt.setString(1, person.getLicencia());
+		String query1 = "DELETE FROM pilotos_pruebas WHERE id_piloto = ?";
+		String query = "DELETE FROM pilotos WHERE licencia = ?";
+		
+		PreparedStatement ps;
+		try {
+			ps = db.prepareStatement(query1);
+			ps.setString(1, person.getLicencia());
+			ps.executeUpdate();
+			
+			ps = db.prepareStatement(query);
+			ps.setString(1, person.getLicencia());
+			ps.executeUpdate();
+		} catch (SQLException e) {
+			e.printStackTrace();
+		}
+		
+		for(Prueba prueba : person.getPruebas()) {
+			prueba.setParticipantes(prueba.getParticipantes() - 1);
+			updatePrueba(prueba);
+		}
+	}
+	
+	public void deletePersonPrueba(Person person, Prueba prueba) {
+		String query = "DELETE FROM pilotos_pruebas WHERE "
+				+ "id_piloto= ? AND id_prueba_mes = ? "
+				+ "AND id_prueba_anio = ?";
+		
+		PreparedStatement ps;
+		try {
+			ps = db.prepareStatement(query);
+			ps.setString(1, person.getLicencia());
+			ps.setInt(2, prueba.getFecha().getMonthValue());
+			ps.setInt(3, prueba.getFecha().getYear());
 
-			preparedStmt.executeUpdate();
+			ps.executeUpdate();
 		} catch (SQLException e) {
 			e.printStackTrace();
 		}
 	}
-	
-	//TODO deletePruebaPerson
+
 }

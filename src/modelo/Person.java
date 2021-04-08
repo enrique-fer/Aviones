@@ -12,20 +12,10 @@ public class Person {
 	private final StringProperty licencia;
 	private ObservableList<Prueba> pruebas;
 
-	/**
-	 * Default constructor.
-	 */
 	public Person() {
 		this(null, null, null);
 	}
 	
-	/**
-	 * Constructor with some initial data.
-	 * 
-	 * @param nombre
-	 * @param apellidos
-	 * @param licencia
-	 */
 	public Person(String nombre, String apellidos, String licencia) {
 		this.nombre = new SimpleStringProperty(nombre);
 		this.apellidos = new SimpleStringProperty(apellidos);

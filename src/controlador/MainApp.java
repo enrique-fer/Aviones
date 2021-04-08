@@ -1,12 +1,8 @@
 package controlador;
 
 import java.io.IOException;
-import java.time.LocalDate;
-
 import bd.BBDD;
 import javafx.application.Application;
-import javafx.collections.FXCollections;
-import javafx.collections.ObservableList;
 import javafx.fxml.FXMLLoader;
 import javafx.scene.Scene;
 import javafx.scene.layout.AnchorPane;
@@ -17,6 +13,7 @@ import modelo.Person;
 import modelo.Prueba;
 import vista.PersonEditarController;
 import vista.PersonOverviewController;
+import vista.PersonsPruebaController;
 import vista.PruebaEditarController;
 import vista.PruebaLicenciaController;
 import vista.PruebaOverviewController;
@@ -26,15 +23,9 @@ public class MainApp extends Application {
 
     private Stage primaryStage;
     private BorderPane rootLayout;
-    private ObservableList<Prueba> pruebaData = FXCollections.observableArrayList();
     private BBDD bd = new BBDD();
 
     public MainApp() {}
-    
-    //Lists	
-	public ObservableList<Prueba> getPruebaData() {
-		return pruebaData;
-	}
 	
 	public BBDD getBBDD() {
 		return this.bd;
@@ -168,6 +159,29 @@ public class MainApp extends Application {
 		        e.printStackTrace();
 		        return false;
 		    }
+	}
+	
+	public void showPersonsPruebaDialog(Prueba prueba) {
+		try {
+	        FXMLLoader loader = new FXMLLoader();
+	        loader.setLocation(MainApp.class.getResource("../vista/DialogoPersonsPrueba.fxml"));
+	        AnchorPane page = (AnchorPane) loader.load();
+
+	        Stage dialogStage = new Stage();
+	        dialogStage.setTitle("Ver Pilotos Inscritos");
+	        dialogStage.initModality(Modality.WINDOW_MODAL);
+	        dialogStage.initOwner(primaryStage);
+	        Scene scene = new Scene(page);
+	        dialogStage.setScene(scene);
+
+	        PersonsPruebaController controller = loader.getController();
+	        controller.setDialogStage(dialogStage);
+	        controller.setPrueba(prueba);
+	        controller.setMainApp(this);
+	        dialogStage.showAndWait();
+	    } catch (IOException e) {
+	        e.printStackTrace();
+	    }
 	}
     
 	
