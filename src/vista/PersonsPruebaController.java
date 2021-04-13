@@ -1,18 +1,18 @@
 package vista;
 
-import java.time.Duration;
 import java.time.LocalDate;
 import controlador.MainApp;
-import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import javafx.fxml.FXML;
 import javafx.scene.control.Alert;
 import javafx.scene.control.TableColumn;
 import javafx.scene.control.TableView;
 import javafx.scene.control.Alert.AlertType;
+import javafx.scene.control.Button;
 import javafx.stage.Stage;
 import modelo.Person;
 import modelo.Prueba;
+import static java.time.temporal.ChronoUnit.DAYS;
 
 public class PersonsPruebaController {
 	@FXML
@@ -23,6 +23,15 @@ public class PersonsPruebaController {
 	private TableColumn<Person, String> licenciaColumn;
 	@FXML
 	private TableColumn<Person, String> apellidosColumn;
+	
+	@FXML
+	private Button signUp;
+	@FXML
+	private Button signOut;
+	@FXML
+	private Button comp;
+	@FXML
+	private Button list;
 
 	private MainApp mainApp;
 
@@ -43,7 +52,7 @@ public class PersonsPruebaController {
 	public void setMainApp(MainApp mainApp) {
 		this.mainApp = mainApp;
 
-		personTable.setItems(this.mainApp.getBBDD().getInscritosData(prueba));
+		showCompetidores();
 	}
 
 	public void setDialogStage(Stage dialogStage) {
@@ -59,27 +68,27 @@ public class PersonsPruebaController {
 		boolean exist = false, reg = false;
 		Person tempPerson = new Person();
 
-		if (this.prueba != null) {
+		if (this.prueba != null) {  //Ha elegido prueba
 			LocalDate today = LocalDate.now();
-			if (Duration.between(today, prueba.getFecha()).toDays() > 2) {
-				if (this.prueba.getParticipantes() <= 20) {
+			if (DAYS.between(today, prueba.getFecha()) > 2) { //Fecha limite de inscripcion
+				if (this.prueba.getParticipantes() < 20) { //Plazas libres
 					boolean okClicked = this.mainApp.showLicenciaDialog(tempPerson);
 
 					if (okClicked) {
 						ObservableList<Person> personas = this.mainApp.getBBDD().getPersonData();
 
 						for (Person person : personas) {
-							if (person.getLicencia().contentEquals(tempPerson.getLicencia())) {
+							if (person.getLicencia().contentEquals(tempPerson.getLicencia())) { //Existe la licencia
 								exist = true;
-								ObservableList<Prueba> pruebas = FXCollections.observableArrayList();
-								pruebas = tempPerson.getPruebas();
+								ObservableList<Prueba> pruebas = this.mainApp.getBBDD().getPruebaPersonData(tempPerson.getLicencia());
 								for (Prueba prueba : pruebas) {
 									if ((prueba.getFecha().getMonthValue() == this.prueba.getFecha().getMonthValue())
-											&& (prueba.getFecha().getYear() == this.prueba.getFecha().getYear())) {
+											&& (prueba.getFecha().getYear() == this.prueba.getFecha().getYear())) { //Ya esta inscrito
 										reg = true;
 										break;
 									}
 								}
+								
 								if (reg) {
 									Alert a = new Alert(AlertType.WARNING);
 									a.setTitle("Inscripcion");
@@ -90,7 +99,7 @@ public class PersonsPruebaController {
 									this.mainApp.getBBDD().insertPruebaPerson(this.prueba, person);
 									this.prueba.setParticipantes(this.prueba.getParticipantes() + 1);
 									this.mainApp.getBBDD().updatePrueba(this.prueba);
-									personTable.setItems(this.mainApp.getBBDD().getInscritosData(this.prueba));
+									personTable.setItems(this.mainApp.getBBDD().getPruebaPersonData(this.prueba));
 								}
 								break;
 							}
@@ -108,8 +117,21 @@ public class PersonsPruebaController {
 					Alert a = new Alert(AlertType.WARNING);
 					a.setTitle("Participantes");
 					a.setHeaderText("Limite de partcipantes");
-					a.setContentText("Se ha completado el cupo de participantes");
+					a.setContentText("Se ha completado el cupo de participantes\nSe te añadira a la lista de espera");
 					a.showAndWait();
+					
+					boolean okClicked = this.mainApp.showLicenciaDialog(tempPerson);
+					if (okClicked) {
+						this.prueba.setLista(this.prueba.getLista() + 1);
+						this.mainApp.getBBDD().insertarPruebaPersonEspera(prueba, tempPerson);
+						this.mainApp.getBBDD().updatePrueba(prueba);
+						a = new Alert(AlertType.WARNING);
+						a.setTitle("Participantes");
+						a.setHeaderText("Lista de espera");
+						a.setContentText(String.format("Se encuentra en la posicion %s", this.prueba.getLista()));
+						a.showAndWait();
+					}
+					
 				}
 			} else {
 				Alert a = new Alert(AlertType.WARNING);
@@ -133,11 +155,24 @@ public class PersonsPruebaController {
 		
 		if(tempPerson != null) {
 			LocalDate today = LocalDate.now();
-			if (Duration.between(today, prueba.getFecha()).toDays() > 0) {
+			if (DAYS.between(today, prueba.getFecha()) > 0) {
 				this.mainApp.getBBDD().deletePersonPrueba(tempPerson, this.prueba);
 				this.prueba.setParticipantes(this.prueba.getParticipantes() - 1);
 				this.mainApp.getBBDD().updatePrueba(prueba);
-				personTable.setItems(this.mainApp.getBBDD().getInscritosData(this.prueba));
+				
+				//TODO Christian
+				if (this.prueba.getLista() > 0) {
+					int pos = 1;
+					ObservableList<Person> persons = this.mainApp.getBBDD()
+							.getPruebaPersonDataEspera(this.prueba);
+					
+					for (Person person : persons) {
+						this.mainApp.getBBDD().updatePersonPrueba(person, this.prueba, pos);
+					}
+				}
+				
+				this.mainApp.getBBDD().updatePrueba(this.prueba);
+				personTable.setItems(this.mainApp.getBBDD().getPruebaPersonData(this.prueba));
 			}
 		} else {
 			Alert a = new Alert(AlertType.WARNING);
@@ -146,5 +181,24 @@ public class PersonsPruebaController {
 			a.setContentText("Porfavor selecciona uno de los pilotos inscritos");
 			a.showAndWait();
 		}
+	}
+	
+	//TODO Christian
+	@FXML
+	public void showCompetidores() {
+		personTable.setItems(this.mainApp.getBBDD().getPruebaPersonData(prueba));
+		comp.setVisible(false);
+		signUp.setVisible(true);
+		signOut.setVisible(true);
+		list.setVisible(true);
+	}
+	
+	@FXML
+	public void showListaEspera() {
+		personTable.setItems(this.mainApp.getBBDD().getPruebaPersonDataEspera(prueba));
+		comp.setVisible(true);
+		signUp.setVisible(false);
+		signOut.setVisible(false);
+		list.setVisible(false);
 	}
 }

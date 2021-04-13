@@ -18,6 +18,7 @@ public class Prueba {
 	private final StringProperty nombre;
 	private final ObjectProperty<LocalDate> fecha;
 	private final IntegerProperty participantes;
+	private final IntegerProperty lista;
 	
 	public Prueba() {
 		this(null, null);
@@ -27,6 +28,7 @@ public class Prueba {
 		this.nombre = new SimpleStringProperty(nombre);
 		this.fecha = new SimpleObjectProperty<LocalDate>(fecha);
 		this.participantes = new SimpleIntegerProperty(0);
+		this.lista = new SimpleIntegerProperty(0);
 		setDictionary();
 	}
 	
@@ -68,6 +70,19 @@ public class Prueba {
 	
 	public IntegerProperty participantesProperty() {
 		return participantes;
+	}
+	
+	
+	public int getLista() {
+		return lista.get();
+	}
+
+	public void setLista(int lista) {
+		this.lista.set(lista);
+	}
+	
+	public IntegerProperty listaProperty() {
+		return lista;
 	}
 	
 	 private void setDictionary() {

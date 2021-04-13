@@ -79,7 +79,6 @@ public class PersonOverviewController {
     		years.getSelectionModel().selectedItemProperty()
     				.addListener((observable, oldValue, newValue) -> showPruebasAnio(person, newValue));
         } else {
-            // Person is null, remove all the text.
             nombreLabel.setText("");
             apellidosLabel.setText("");
             licenciaLabel.setText("");
