@@ -11,14 +11,19 @@
         <menus>
           <Menu mnemonicParsing="false" text="Menu">
             <items>
-              <MenuItem fx:id="pruebas" mnemonicParsing="false" onAction="#pruebaScene" text="Pruebas" />
                   <MenuItem fx:id="pilotos" mnemonicParsing="false" onAction="#personScene" text="Pilotos" />
+                  <Menu mnemonicParsing="false" text="Pruebas">
+                    <items>
+                      <MenuItem mnemonicParsing="false" onAction="#pruebaScene" text="Ver" />
+                        <MenuItem mnemonicParsing="false" onAction="#mangasScene" text="Competicion" />
+                    </items>
+                  </Menu>
             </items>
           </Menu>
           <Menu mnemonicParsing="false" text="Clasificaciones">
-            <items>
-              <MenuItem mnemonicParsing="false" text="Puestos" />
-            </items>
+               <items>
+                  <MenuItem mnemonicParsing="false" onAction="#clasificacionScene" text="Prueba" />
+               </items>
           </Menu>
         </menus>
       </MenuBar>
